@@ -1,0 +1,28 @@
+# GROMACS Output Files (Large Binaries)
+*.xtc
+*.trr
+*.edr
+*.cpt
+*.tpr
+*.log
+
+# GROMACS Backup Files
+#*#
+
+# Intermediate Coordinate Files (Keep specific inputs if you want, but ignore generated steps)
+# We often want to keep final output structure but maybe not every step
+# For now, let's ignore the intermediate step outputs to keep repo light
+step*_*.*
+!step5_production.mdp
+!step4.1_equilibration.mdp
+!step4.0_minimization.mdp
+
+# Python
+__pycache__/
+*.pyc
+
+# System
+.DS_Store
+
+# Temporary
+temp.*

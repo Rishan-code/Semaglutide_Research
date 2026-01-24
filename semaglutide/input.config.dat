@@ -1,0 +1,1 @@
+{"systype":null,"dimensions":["65","65","65","90.0","90.0","90.0"],"input":["gromacs"],"forcefield":{"type":"c36m","files":["default"],"custom":["wf1\/wf1.rtf","wf1\/wf1.prm"]},"hmr":false}

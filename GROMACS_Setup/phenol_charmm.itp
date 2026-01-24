@@ -1,0 +1,99 @@
+[ moleculetype ]
+; Name            nrexcl
+PHEN              3
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
+; Re-ordered to match LigParGen/PDB order (O00, C01...C06, H07...H0C)
+; Indices: 1=OH, 2=CZ, 3=CE1, 4=CD1, 5=CG, 6=CD2, 7=CE2, 8=H, 9=HE1, 10=HD1, 11=HG1, 12=HD2, 13=HE2
+     1        OH1      1   PHEN     OH      1    -0.5400    15.9994
+     2         CA      1   PHEN     CZ      1     0.1000    12.0110
+     3         CA      1   PHEN    CE1      1    -0.1150    12.0110
+     4         CA      1   PHEN    CD1      1    -0.1150    12.0110
+     5         CA      1   PHEN     CG      1    -0.1150    12.0110
+     6         CA      1   PHEN    CD2      1    -0.1150    12.0110
+     7         CA      1   PHEN    CE2      1    -0.1150    12.0110
+     8          H      1   PHEN      H      1     0.4400     1.0080  ; Hydroxyl H
+     9         HP      1   PHEN    HE1      1     0.1150     1.0080
+    10         HP      1   PHEN    HD1      1     0.1150     1.0080
+    11         HP      1   PHEN    HG1      1     0.1150     1.0080
+    12         HP      1   PHEN    HD2      1     0.1150     1.0080
+    13         HP      1   PHEN    HE2      1     0.1150     1.0080
+
+[ bonds ]
+;  ai    aj funct
+    1     8     1 ; OH-H (1-8)
+    1     2     1 ; OH-CZ (1-2)
+    2     3     1 ; CZ-CE1
+    2     7     1 ; CZ-CE2
+    3     4     1 ; CE1-CD1
+    7     6     1 ; CE2-CD2
+    4     5     1 ; CD1-CG
+    6     5     1 ; CD2-CG
+    3     9     1 ; CE1-HE1
+    7    13     1 ; CE2-HE2
+    4    10     1 ; CD1-HD1
+    6    12     1 ; CD2-HD2
+    5    11     1 ; CG-HG1
+    3     7     1 ; Ring closure CE1-CE2? No, CZ is connected to both. Ring is 2-3-4-5-6-7-2.
+                  ; Explicit closure bond usually not listed if part of loop? 
+                  ; CHARMM usually lists all.
+                  ; We listed 2-3, 3-4, 4-5, 5-6, 6-7. Missing 7-2?
+                  ; 2 is CZ. 7 is CE2. 2-7 listed above. 
+                  ; So the loop is closed.
+
+[ pairs ]
+; 1-4 interactions
+; H(8)-OH1(1)-CZ(2)-CE1(3) -> 8-3
+; H(8)-OH1(1)-CZ(2)-CE2(7) -> 8-7
+    8     3     1
+    8     7     1
+; Ring pairs
+; HE1(9)-CE1(3)-CZ(2)-CE2(7) -> 9-7
+    9     7     1
+    9     4     1 ; HE1-CD1 (via C-C-C)
+   13     2     1 ; HE2-CZ
+   13     6     1 ; HE2-CD2
+   10     2     1 ; HD1-CZ
+   10     5     1 ; HD1-CG
+   12     2     1 ; HD2-CZ
+   12     5     1 ; HD2-CG
+   11     3     1 ; HG1-CE1
+   11     7     1 ; HG1-CE2
+   
+[ angles ]
+;  ai    aj    ak funct   theta    k
+; OH-CZ-CE1/CE2
+    8     1     2     1  108.00  397.48 ; H-OH-CZ
+    1     2     3     1  120.00  292.88 ; OH-CZ-CE1
+    1     2     7     1  120.00  292.88 ; OH-CZ-CE2
+    3     2     7     1  120.00  292.88 ; CE1-CZ-CE2
+; Ring
+    2     3     4     1  120.00  292.88 ; CZ-CE1-CD1
+    3     4     5     1  120.00  292.88 ; CE1-CD1-CG
+    4     5     6     1  120.00  292.88 ; CD1-CG-CD2
+    5     6     7     1  120.00  292.88 ; CG-CD2-CE2
+    6     7     2     1  120.00  292.88 ; CD2-CE2-CZ
+; Hydrogens
+    2     3     9     1  120.00  292.88 ; CZ-CE1-HE1
+    4     3     9     1  120.00  292.88 ; CD1-CE1-HE1
+    2     7    13     1  120.00  292.88 ; CZ-CE2-HE2
+    6     7    13     1  120.00  292.88 ; CD2-CE2-HE2
+    3     4    10     1  120.00  292.88 ; CE1-CD1-HD1
+    5     4    10     1  120.00  292.88 ; CG-CD1-HD1
+    7     6    12     1  120.00  292.88 ; CE2-CD2-HD2
+    5     6    12     1  120.00  292.88 ; CG-CD2-HD2
+    4     5    11     1  120.00  292.88 ; CD1-CG-HG1
+    6     5    11     1  120.00  292.88 ; CD2-CG-HG1
+
+[ dihedrals ]
+; Proper
+    8     1     2     3     1  180.00  6.50 2 ; H-OH-CZ-CE1
+    8     1     2     7     1  180.00  6.50 2 ; H-OH-CZ-CE2
+; Ring 2-3-4-5-6-7
+    2     3     4     5     1  180.00  12.00 2
+    3     4     5     6     1  180.00  12.00 2
+    4     5     6     7     1  180.00  12.00 2
+    5     6     7     2     1  180.00  12.00 2
+    6     7     2     3     1  180.00  12.00 2
+    7     2     3     4     1  180.00  12.00 2

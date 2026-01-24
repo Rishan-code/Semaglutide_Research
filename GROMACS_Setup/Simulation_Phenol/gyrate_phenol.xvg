@@ -1,0 +1,38 @@
+# This file was created Sun Jan 18 13:45:24 2026
+# Created by:
+#          :-) GROMACS - gmx gyrate, 2023.3-Ubuntu_2023.3_1ubuntu3 (-:
+# 
+# Executable:   /usr/bin/gmx
+# Data prefix:  /usr
+# Working dir:  /mnt/d/Ozempic/GROMACS_Setup/Simulation_Phenol
+# Command line:
+#   gmx gyrate -f step5_production_phenol.xtc -s step5_production_phenol.tpr -o gyrate_phenol.xvg
+# gmx gyrate is part of G R O M A C S:
+#
+# Gnomes, ROck Monsters And Chili Sauce
+#
+@    title "Radius of gyration (total and around axes)"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "Rg (nm)"
+@TYPE xy
+@ view 0.15, 0.15, 0.75, 0.85
+@ legend on
+@ legend box on
+@ legend loctype view
+@ legend 0.78, 0.8
+@ legend length 2
+@ s0 legend "Rg"
+@ s1 legend "Rg\sX\N"
+@ s2 legend "Rg\sY\N"
+@ s3 legend "Rg\sZ\N"
+         0     5.53728     4.64178     4.69051     4.21615
+       100     5.63093     4.73475     4.79035     4.24846
+       200     5.60418     4.67347     4.81868      4.2134
+       300     5.16809     4.21173     4.28462     4.16193
+       400     4.93385     3.87741     4.29246     3.90208
+       500     4.97704     3.93411      4.3665     3.87277
+       600     5.14976     4.16764     4.53893     3.88187
+       700     5.15231     4.11571     4.53433     3.94885
+       800     5.12436     4.07211     4.53118     3.92485
+       900     5.15022     4.07104      4.5508     3.97068
+      1000     5.31703     4.30821     4.53434     4.17382

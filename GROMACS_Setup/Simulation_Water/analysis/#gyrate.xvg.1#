@@ -1,0 +1,38 @@
+# This file was created Thu Jan 15 18:01:34 2026
+# Created by:
+#          :-) GROMACS - gmx gyrate, 2023.3-Ubuntu_2023.3_1ubuntu3 (-:
+# 
+# Executable:   /usr/bin/gmx
+# Data prefix:  /usr
+# Working dir:  /mnt/d/Ozempic/GROMACS_Setup
+# Command line:
+#   gmx gyrate -f 05_production/step5_production_10mer.xtc -s 05_production/step5_production_10mer.tpr -o analysis/gyrate.xvg
+# gmx gyrate is part of G R O M A C S:
+#
+# Good ROcking Metal Altar for Chronical Sinners
+#
+@    title "Radius of gyration (total and around axes)"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "Rg (nm)"
+@TYPE xy
+@ view 0.15, 0.15, 0.75, 0.85
+@ legend on
+@ legend box on
+@ legend loctype view
+@ legend 0.78, 0.8
+@ legend length 2
+@ s0 legend "Rg"
+@ s1 legend "Rg\sX\N"
+@ s2 legend "Rg\sY\N"
+@ s3 legend "Rg\sZ\N"
+         0      5.9085     4.95344      5.3513     4.08018
+       100     6.00715     4.79992     5.52594     4.31236
+       200     5.92313     4.69023     5.44533     4.30314
+       300     5.85127     4.53588     5.34353     4.39854
+       400     5.51523      4.4822     4.99841     3.97003
+       500     5.95467     4.59863     5.39772      4.5424
+       600     5.58351     4.56968     4.97877     4.08423
+       700      5.8142     4.60169     5.24186     4.35397
+       800     5.58829     4.66769     4.97354      3.9918
+       900     5.33833     4.36233     4.68181     4.00578
+      1000     5.64678     4.77341     5.01428     3.98042
