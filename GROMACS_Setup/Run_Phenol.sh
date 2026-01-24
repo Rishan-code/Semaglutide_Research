@@ -12,6 +12,13 @@ echo "----------------------------------------------------------------"
 DIR_MAIN="Simulation_Phenol"
 mkdir -p "$DIR_MAIN"
 
+# DEBUG: Print environment info
+echo "=== Debugging Environment ==="
+hostname
+echo "Modules Loaded:"
+module list 2>&1 || echo "Module command failed"
+echo "============================="
+
 # Files (Assumed to be in root GROMACS_Setup)
 PHENOL_PDB="phenol_charmm.pdb"
 PHENOL_ITP="phenol_charmm.itp"
@@ -22,6 +29,70 @@ if [ ! -f "$PHENOL_PDB" ] || [ ! -f "$PHENOL_ITP" ]; then
     echo "Error: Missing phenol files ($PHENOL_PDB or $PHENOL_ITP)"
     exit 1
 fi
+
+# GROMACS Command Detection & Launcher Setup
+# We prefer 'mpirun' for MPI binaries to avoid PMPI_Init failures,
+# unless 'gmx' (Thread-MPI) is used.
+
+# GROMACS Command & Launcher Detection
+# Priority:
+# 1. gmx (Thread-MPI) -> No launcher needed (Simpler, less prone to MPI errors)
+# 2. gmx_mpi / gmx-mpi -> Needs mpirun/mpiexec/srun
+
+GMX_CMD=""
+LAUNCHER=""
+EXEC_SERIAL=""
+EXEC_MD=""
+
+if command -v gmx &> /dev/null; then
+    GMX_CMD="gmx"
+    echo "Found 'gmx' (Thread-MPI). No external launcher required."
+elif command -v gmx_mpi &> /dev/null; then
+    GMX_CMD="gmx_mpi"
+    echo "Found 'gmx_mpi' (MPI-enabled)."
+elif command -v gmx-mpi &> /dev/null; then
+    GMX_CMD="gmx-mpi"
+    echo "Found 'gmx-mpi' (MPI-enabled)."
+else
+    echo "Error: No GROMACS binary (gmx, gmx_mpi, gmx-mpi) found in PATH."
+    echo "Please ensure 'module load gromacs...' is in your submission script."
+    exit 1
+fi
+
+# Detect Launcher if using MPI version
+if [[ "$GMX_CMD" == *"mpi"* ]]; then
+    if command -v mpirun &> /dev/null; then
+        LAUNCHER="mpirun"
+    elif command -v mpiexec &> /dev/null; then
+        LAUNCHER="mpiexec"
+    elif command -v srun &> /dev/null; then
+        LAUNCHER="srun"
+    else
+        echo "Error: MPI GROMACS found ($GMX_CMD) but no launcher (mpirun, mpiexec, srun) found."
+        exit 1
+    fi
+    
+    # Set Exec Variables
+    # Note: For srun, we might need '--exclusive' or similar if "credential expired" persists,
+    # but 'mpiexec' is usually safer if available.
+    echo "Using MPI Launcher: $LAUNCHER"
+    
+    if [[ "$LAUNCHER" == "srun" ]]; then
+        # Try --mpi=pmi2 to avoid "Job credential expired" or PMI errors
+        # Also --exclusive sometimes helps prevent step conflicts
+        # Using --mpi=pmi2 as primary fix attempt.
+        FLAGS="--mpi=pmi2"
+        EXEC_SERIAL="srun $FLAGS -n 1"
+        EXEC_MD="srun $FLAGS"
+    else
+        EXEC_SERIAL="$LAUNCHER -n 1"
+        EXEC_MD="$LAUNCHER"
+    fi
+fi
+
+echo "Using GROMACS execution command: $GMX_CMD"
+echo "Serial Launcher: '$EXEC_SERIAL'"
+echo "MD Launcher:     '$EXEC_MD'"
 
 # Fix Atom Name Mismatch (OH1 vs OH) in PDB if present
 # ITP uses "OH", PDB might have "OH1" from earlier rename.
@@ -47,11 +118,11 @@ if [ ! -f "$DIR_MAIN/protein_only.gro" ]; then
     echo "Creating merged index (Protein + KWF1)..."
     # "1 | 13" creates new group. "name 19 PROH_Complex" renames it. "q" to quit.
     # We assume groups 0-18 exist (based on previous logs). New group is 19.
-    echo -e "1 | 13 \n name 19 PROH_Complex \n q" | gmx make_ndx -f "$TPR_REF" -o "$DIR_MAIN/index_merged.ndx"
+    echo -e "1 | 13 \n name 19 PROH_Complex \n q" | $EXEC_SERIAL $GMX_CMD make_ndx -f "$TPR_REF" -o "$DIR_MAIN/index_merged.ndx"
 
     echo "Extracting Protein + KWF1..."
     # Center on Protein (1), Output PROH_Complex (19)
-    echo "1 19" | gmx trjconv -f "$INPUT_GRO" -s "$TPR_REF" -n "$DIR_MAIN/index_merged.ndx" -o "$DIR_MAIN/protein_only.gro" -pbc mol -center
+    echo "1 19" | $EXEC_SERIAL $GMX_CMD trjconv -f "$INPUT_GRO" -s "$TPR_REF" -n "$DIR_MAIN/index_merged.ndx" -o "$DIR_MAIN/protein_only.gro" -pbc mol -center
 else
     echo "Step 1: Protein Extraction already done. Skipping."
 fi
@@ -59,7 +130,7 @@ fi
 # 2. Insert Phenol
 if [ ! -f "$DIR_MAIN/box_phenol.gro" ]; then
     echo "Inserting $PHENOL_NMOL Phenol molecules..."
-    gmx insert-molecules -f "$DIR_MAIN/protein_only.gro" -ci "$PHENOL_PDB" -nmol "$PHENOL_NMOL" -o "$DIR_MAIN/box_phenol.gro"
+    $EXEC_SERIAL $GMX_CMD insert-molecules -f "$DIR_MAIN/protein_only.gro" -ci "$PHENOL_PDB" -nmol "$PHENOL_NMOL" -o "$DIR_MAIN/box_phenol.gro"
 else
     echo "Step 2: Phenol Insertion already done. Skipping."
 fi
@@ -100,7 +171,7 @@ fi
 # 4. Solvate
 if [ ! -f "$DIR_MAIN/box_solvated.gro" ]; then
     echo "Solvating..."
-    gmx solvate -cp "$DIR_MAIN/box_phenol.gro" -cs spc216.gro -o "$DIR_MAIN/box_solvated.gro" -p "$DIR_MAIN/topol_phenol.top"
+    $EXEC_SERIAL $GMX_CMD solvate -cp "$DIR_MAIN/box_phenol.gro" -cs spc216.gro -o "$DIR_MAIN/box_solvated.gro" -p "$DIR_MAIN/topol_phenol.top"
 else
     echo "Step 4: Solvation already done. Skipping."
 fi
@@ -109,10 +180,10 @@ fi
 if [ ! -f "$DIR_MAIN/box_ionized.gro" ]; then
     echo "Adding Ions..."
     # Create TPR for genion
-    gmx grompp -f ions.mdp -c "$DIR_MAIN/box_solvated.gro" -p "$DIR_MAIN/topol_phenol.top" -o "$DIR_MAIN/ions.tpr" -maxwarn 1
+    $EXEC_SERIAL $GMX_CMD grompp -f ions.mdp -c "$DIR_MAIN/box_solvated.gro" -p "$DIR_MAIN/topol_phenol.top" -o "$DIR_MAIN/ions.tpr" -maxwarn 1
     
     # Run genion
-    echo "SOL" | gmx genion -s "$DIR_MAIN/ions.tpr" -o "$DIR_MAIN/box_ionized.gro" -p "$DIR_MAIN/topol_phenol.top" -pname POT -nname CLA -neutral -conc 0.15
+    echo "SOL" | $EXEC_SERIAL $GMX_CMD genion -s "$DIR_MAIN/ions.tpr" -o "$DIR_MAIN/box_ionized.gro" -p "$DIR_MAIN/topol_phenol.top" -pname POT -nname CLA -neutral -conc 0.15
 else
     echo "Step 5: Ionization already done. Skipping."
 fi
@@ -128,8 +199,8 @@ cd "$DIR_MAIN"
 # Minimization
 if [ ! -f "step4.0_minimization_phenol.gro" ]; then
     echo "Starting Minimization..."
-    gmx grompp -f step4.0_minimization.mdp -c box_ionized.gro -r box_ionized.gro -p topol_phenol.top -o step4.0_minimization_phenol.tpr
-    gmx mdrun -v -deffnm step4.0_minimization_phenol
+    $EXEC_SERIAL $GMX_CMD grompp -f step4.0_minimization.mdp -c box_ionized.gro -r box_ionized.gro -p topol_phenol.top -o step4.0_minimization_phenol.tpr
+    $EXEC_MD $GMX_CMD mdrun -v -deffnm step4.0_minimization_phenol
 else
     echo "Step 6a: Minimization already done. Skipping."
 fi
@@ -139,11 +210,11 @@ if [ ! -f "step4.1_equilibration_phenol.gro" ]; then
     echo "Creating Index Groups for T-Coupling (SOLU/SOLV)..."
     # Define SOLU (Protein + KWF1) and SOLV (Everything else)
     # Using Group IDs from log: 1=Protein, 13=KWF1 (adjust if needed)
-    echo -e "1 | 13 \n name 20 SOLU \n ! 20 \n name 21 SOLV \n q" | gmx make_ndx -f step4.0_minimization_phenol.gro -o index_phenol.ndx
+    echo -e "1 | 13 \n name 20 SOLU \n ! 20 \n name 21 SOLV \n q" | $EXEC_SERIAL $GMX_CMD make_ndx -f step4.0_minimization_phenol.gro -o index_phenol.ndx
 
     echo "Starting Equilibration..."
-    gmx grompp -f step4.1_equilibration.mdp -c step4.0_minimization_phenol.gro -r step4.0_minimization_phenol.gro -p topol_phenol.top -n index_phenol.ndx -o step4.1_equilibration_phenol.tpr
-    gmx mdrun -v -deffnm step4.1_equilibration_phenol
+    $EXEC_SERIAL $GMX_CMD grompp -f step4.1_equilibration.mdp -c step4.0_minimization_phenol.gro -r step4.0_minimization_phenol.gro -p topol_phenol.top -n index_phenol.ndx -o step4.1_equilibration_phenol.tpr
+    $EXEC_MD $GMX_CMD mdrun -v -deffnm step4.1_equilibration_phenol
 else
     echo "Step 6b: Equilibration already done. Skipping."
 fi
@@ -152,15 +223,26 @@ fi
 echo "Starting/Continuing Production (Target: 10 ns)..."
 
 # Always grompp to allow updating parameters (like nsteps)
-gmx grompp -f step5_production.mdp -c step4.1_equilibration_phenol.gro -p topol_phenol.top -n index_phenol.ndx -o step5_production_phenol.tpr
+$EXEC_SERIAL $GMX_CMD grompp -f step5_production.mdp -c step4.1_equilibration_phenol.gro -p topol_phenol.top -n index_phenol.ndx -o step5_production_phenol.tpr
 
 # Check if we should resume from a checkpoint
 if [ -f "step5_production_phenol.cpt" ]; then
     echo "Resuming from checkpoint..."
-    gmx mdrun -v -deffnm step5_production_phenol -cpi step5_production_phenol.cpt -append
+    $EXEC_MD $GMX_CMD mdrun -v -deffnm step5_production_phenol -cpi step5_production_phenol.cpt -append
 else
     echo "Starting fresh production run..."
-    gmx mdrun -v -deffnm step5_production_phenol
+    $GMX_CMD mdrun -v -deffnm step5_production_phenol
+fi
+
+# --- 7. Analysis (Rg) ---
+# Analysis logic for Phenol Simulation
+if [ -f "step5_production_phenol.tpr" ]; then
+    echo "Calculating Radius of Gyration (Protein)..."
+    # Select Group 1 (Protein) for Rg calculation
+    # Note: Ensure 'Protein' group exists or use index_phenol.ndx if needed. 
+    # Usually Group 1 is Protein in standard index files.
+    echo "1" | $EXEC_SERIAL $GMX_CMD gyrate -s step5_production_phenol.tpr -f step5_production_phenol.gro -o gyrate_phenol.xvg
+    echo "Rg analysis saved to gyrate_phenol.xvg"
 fi
 
 echo "----------------------------------------------------------------"

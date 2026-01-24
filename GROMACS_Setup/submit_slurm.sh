@@ -14,7 +14,7 @@
 
 # 1. Load GROMACS Module
 echo "Loading GROMACS module..."
-module load gromacs
+module load gromacs-cpu
 
 # 2. Check Permissions
 chmod +x Run_Phenol.sh
