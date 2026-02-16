@@ -2,104 +2,138 @@ import os
 import shutil
 import glob
 
-TO_BE_DELETED = "ToBeDeleted"
-EXTRA_FILES_DIR = "Extra_Files"
+TRASH_DIR = "Trash"
+SIM_DIRS = ["Simulation_Water", "Simulation_Phenol", "Simulation_Single_Phenol", "."]
 
-# Files to KEEP in root (besides the main folders)
-KEEP_EXACT = {
-    "Run_10mer.sh", 
-    "step5_production.mdp", 
-    "topol_10mer.top", 
-    "index.ndx",
-    "fix_topology.py",
-    "extract_protein.py",
-    "organize_files.py",
+# Patterns to MOVE to Trash (Glob patterns)
+PATTERNS_TO_MOVE = [
+    "#*#",              # GROMACS backups
+    "step4.0_*",        # Minimization files
+    "step4.1_*",        # Equilibration files
+    "*.log",            # Logs (except production if whitelisted)
+    "*.edr",            # Energies
+    "*.trr",            # Trajectories
+    "*.cpt",            # Checkpoints
+    "ions.tpr",
+    "mdout.mdp",
+    "*.xvg",            # Graphs
+    "box_*.gro",        # Intermediate build steps
+    "protein_only.gro",
+    "ions.gro",
+    "temp_*.top",
+]
+
+# Specific files to KEEP (Whitelist)
+FILES_TO_KEEP = [
+    # Scripts
+    "Run_Phenol.sh",
+    "Run_Water.sh",
+    "Run_Single_Phenol.sh",
+    "submit_slurm.sh",
     "cleanup.py",
+    "extract_protein.py",
+    "fix_topology.py",
+    "gro_to_mol2.py",
+    "gro_to_pdb.py",
+    "organize_files.py",
+    "organize_projects.py",
+    "rename_phenol.py",
+    "test_installation.py",
+    
+    # Templates & Data
+    "phenol_charmm.itp",
+    "phenol_charmm.pdb",
     "ions.mdp",
     "step4.0_minimization.mdp",
     "step4.1_equilibration.mdp",
-    "system_10mer.gro" # Keep initial input? User said "put all unwanted". Let's assume input gro is wanted.
-}
-
-KEEP_DIRS = {
-    "01_solvation",
-    "02_ions",
-    "03_minimization",
-    "04_equilibration",
-    "05_production",
+    "step5_production.mdp",
+    
+    # Docs
+    "README.md",
+    "SIMULATION_README.md",
+    ".gitignore",
+    
+    # Directories (Keep them!)
+    "Simulation_Phenol",
+    "Simulation_Water",
+    "Simulation_Single_Phenol",
     "toppar",
-    TO_BE_DELETED # obviously
-}
+    "ToBeDeleted",
+    "Trash",
+    "__pycache__",
+    ".git",
+    ".vs",
+    
+    # Production Outputs (Sim_Phenol)
+    "step5_production_phenol.xtc",
+    "step5_production_phenol.tpr",
+    "step5_production_phenol.gro",
+    "step5_production_phenol.edr",
+    "step5_production_phenol.log",
+    "step5_production_phenol.cpt",
+    "index_phenol.ndx",
+    "topol_phenol.top",
+    "step5_production_phenol_clean.xtc",
+    
+    # Production Outputs (Sim_Water)
+    "step5_production_10mer.xtc",
+    "step5_production_10mer.tpr",
+    "step5_production_10mer.gro",
+    "step5_production_10mer.edr",
+    "step5_production_10mer.log",
+    "step5_production_10mer.cpt",
+    "index.ndx",
+    "topol_10mer.top",
+]
 
-def cleanup():
-    if not os.path.exists(TO_BE_DELETED):
-        os.makedirs(TO_BE_DELETED)
-        print(f"Created {TO_BE_DELETED}")
+def cleanup_directory(directory):
+    trash_path = os.path.join(directory, TRASH_DIR)
+    if not os.path.exists(trash_path):
+        os.makedirs(trash_path)
+        # print(f"Created {trash_path}") 
 
-    # 1. Move Extra_Files content
-    if os.path.exists(EXTRA_FILES_DIR):
-        print(f"Moving content from {EXTRA_FILES_DIR}...")
-        for item in os.listdir(EXTRA_FILES_DIR):
-            src = os.path.join(EXTRA_FILES_DIR, item)
-            dst = os.path.join(TO_BE_DELETED, item)
-            
-            # If valid usage of cleanup, handle duplicates by renaming
-            if os.path.exists(dst):
-                base, ext = os.path.splitext(item)
-                dst = os.path.join(TO_BE_DELETED, f"{base}_copy{ext}")
-
-            try:
-                shutil.move(src, dst)
-            except Exception as e:
-                print(f"Error moving {item}: {e}")
+    print(f"Cleaning {directory}...")
+    
+    # Get all files in the directory
+    all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+    
+    for filename in all_files:
+        filepath = os.path.join(directory, filename)
         
-        # Move the empty directory itself? Or leave it?
-        # User said "put files from the folder extra files".
-        # I'll move the folder itself if empty, or just move the folder INTO ToBeDeleted?
-        # "put files from the folder extra files into that new folder" -> implied flat or nested?
-        # Flat is messier if collisions. Nested is cleaner.
-        # But user said "unwanted files into a folder".
-        # I already moved them flat above.
-        
-        try:
-            os.rmdir(EXTRA_FILES_DIR)
-            print("Removed empty Extra_Files directory")
-        except:
-             print("Extra_Files not empty, keeping it")
-
-    # 2. Move files from Root
-    print("Cleaning root directory...")
-    for item in os.listdir("."):
-        if item in KEEP_EXACT or item in KEEP_DIRS:
+        # Check against whitelist FIRST
+        if filename in FILES_TO_KEEP:
             continue
+            
+        move_it = False
         
-        # Files like #...#, temp.top..., etc.
-        # Also .mdp files? I added mdps to KEEP_EXACT just in case, 
-        # but user might consider them "unwanted" if they are copies?
-        # "dont touch the solvation ions minimization and etc folders"
+        # Check against patterns
+        for pattern in PATTERNS_TO_MOVE:
+            if glob.fnmatch.fnmatch(filename, pattern):
+                move_it = True
+                break
         
-        # Safest bet: Move everything NOT in the explicit Keep list.
-        # Let's review the list.
-        
-        # Run_10mer_BACKUP.sh -> Move
-        # Repair_10mer.sh -> Move? Probably (was from prev attempt)
-        # mdout.mdp -> Move (generated)
-        # single_correct.gro -> Move?
-        # temp.top* -> Move
-        # #*# -> Move
-        
-        src = os.path.join(".", item)
-        dst = os.path.join(TO_BE_DELETED, item)
-        
-        if os.path.exists(dst):
-             base, ext = os.path.splitext(item)
-             dst = os.path.join(TO_BE_DELETED, f"{base}_root_copy{ext}")
+        if move_it:
+            dst = os.path.join(trash_path, filename)
+            # Handle duplicates
+            if os.path.exists(dst):
+                base, ext = os.path.splitext(filename)
+                count = 1
+                while os.path.exists(os.path.join(trash_path, f"{base}_{count}{ext}")):
+                    count += 1
+                dst = os.path.join(trash_path, f"{base}_{count}{ext}")
+            
+            try:
+                shutil.move(filepath, dst)
+                print(f"Moved {filename} -> {TRASH_DIR}/")
+            except Exception as e:
+                print(f"Error moving {filename}: {e}")
 
-        try:
-            shutil.move(src, dst)
-            print(f"Moved {item}")
-        except Exception as e:
-             print(f"Error moving {item}: {e}")
+def main():
+    for sim_dir in SIM_DIRS:
+        if os.path.exists(sim_dir):
+            cleanup_directory(sim_dir)
+        else:
+            print(f"Directory {sim_dir} not found (skipping).")
 
 if __name__ == "__main__":
-    cleanup()
+    main()
