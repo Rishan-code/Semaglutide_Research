@@ -1,0 +1,37 @@
+
+prm_file = r"d:\Ozempic\GROMACS_Setup\New_Simulation\sem_standardized.prm"
+
+bridge_params = """
+! Bridge Parameters for Protein Backbone (CT1) to CGenFF Sidechain (CG321)
+! Derived from CHARMM36 Protein CT1-CT2 parameters (Lysine-like)
+
+BONDS
+CT1  CG321   222.50  1.5300 ! Bridge CA-CB
+
+ANGLES
+NH1  CT1  CG321   45.00  110.10 ! Bridge N-CA-CB
+C    CT1  CG321   63.00  111.60 ! Bridge C-CA-CB
+HB1  CT1  CG321   35.00  109.50 ! Bridge HA-CA-CB
+CT1  CG321 CG321  58.35  113.60 ! Bridge CA-CB-CG
+CT1  CG321 HGA2   26.50  110.10 ! Bridge CA-CB-HB
+
+DIHEDRALS
+NH1  CT1  CG321  CG321   0.2000  3  180.00 ! Bridge N-CA-CB-CG
+C    CT1  CG321  CG321   0.2000  3  180.00 ! Bridge C-CA-CB-CG
+HB1  CT1  CG321  CG321   0.1950  3    0.00 ! Bridge HA-CA-CB-CG (?) - approximated from HA-CT1-CT2-CT2
+NH1  CT1  CG321  HGA2    0.1950  3    0.00 ! Bridge N-CA-CB-HB
+C    CT1  CG321  HGA2    0.1950  3    0.00 ! Bridge C-CA-CB-HB
+
+IMPROC
+! CA Chirality if needed? Standard AA uses Impropers in Topology (RTF), not Params.
+! Parameters define the force constant if RTF defines the quad.
+! Usually simple improper: C CA N CB? 
+! Or N - C - CA - H?
+! We will trust the setup unless it crashes.
+
+"""
+
+with open(prm_file, 'a') as f:
+    f.write(bridge_params)
+
+print(f"Bridge parameters appended to {prm_file}")

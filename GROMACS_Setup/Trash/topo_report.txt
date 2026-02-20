@@ -1,0 +1,96 @@
+============================================================
+SEMAGLUTIDE TOPOLOGY VERIFICATION
+============================================================
+
+ Pos  GLP1#    Sema     ITP    Status
+----------------------------------------
+   1      7     His     HSD        OK
+   2      8     Aib     AIB        OK
+   3      9     Glu     GLU        OK
+   4     10     Gly     GLY        OK
+   5     11     Thr     THR        OK
+   6     12     Phe     PHE        OK
+   7     13     Thr     THR        OK
+   8     14     Ser     SER        OK
+   9     15     Asp     ASP        OK
+  10     16     Val     VAL        OK
+  11     17     Ser     SER        OK
+  12     18     Ser     SER        OK
+  13     19     Tyr     TYR        OK
+  14     20     Leu     LEU        OK
+  15     21     Glu     GLU        OK
+  16     22     Gly     GLY        OK
+  17     23     Gln     GLN        OK
+  18     24     Ala     ALA        OK
+  19     25     Ala     ALA        OK
+  20     26    Lys*    KWF1        OK
+  21     27     Glu     GLU        OK
+  22     28     Phe     PHE        OK
+  23     29     Ile     ILE        OK
+  24     30     Ala     ALA        OK
+  25     31     Trp     TRP        OK
+  26     32     Leu     LEU        OK
+  27     33     Val     VAL        OK
+  28     34     Arg     ARG        OK
+  29     35     Gly     GLY        OK
+  30     36     Arg     ARG        OK
+
+ Res   Name    Charge  Atoms
+------------------------------
+   7    HSD     1.000     19
+   8    AIB    -0.000     13
+   9    GLU    -1.000     15
+  10    GLY     0.000      7
+  11    THR    -0.000     14
+  12    PHE     0.000     20
+  13    THR    -0.000     14
+  14    SER    -0.000     11
+  15    ASP    -1.000     12
+  16    VAL    -0.000     16
+  17    SER    -0.000     11
+  18    SER    -0.000     11
+  19    TYR    -0.000     21
+  20    LEU    -0.000     19
+  21    GLU    -1.000     15
+  22    GLY     0.000      7
+  23    GLN     0.000     17
+  24    ALA     0.000     10
+  25    ALA     0.000     10
+  26   KWF1     1.000     64
+  27    GLU    -1.000     15
+  28    PHE     0.000     20
+  29    ILE    -0.000     19
+  30    ALA     0.000     10
+  31    TRP     0.000     24
+  32    LEU    -0.000     19
+  33    VAL    -0.000     16
+  34    ARG     1.000     24
+  35    GLY     0.000      7
+  36    ARG     1.000     27
+
+--- C-terminus (last 5 atoms) ---
+  atom  503      CC   ARG     C  q=+0.550
+  atom  504       O   ARG     O  q=-0.550
+  atom  505     NH2   ARG    NT  q=-0.620
+  atom  506       H   ARG   HT1  q=+0.320
+  atom  507       H   ARG   HT2  q=+0.300
+
+--- N-terminus (first 5 atoms) ---
+  atom    1     NH3   HSD     N  q=-0.300
+  atom    2      HC   HSD   HT1  q=+0.330
+  atom    3      HC   HSD   HT2  q=+0.330
+  atom    4      HC   HSD   HT3  q=+0.330
+  atom    5     CT1   HSD    CA  q=+0.210
+
+============================================================
+Total atoms:    507
+Total residues: 30
+Total charge:   +0.0000
+Total mass:     3630.06 Da
+Sequence match: ALL OK
+
+--- KWF1 (Modified Lysine @ pos 26) ---
+Atoms: 64
+Charge: +1.0000
+Mass: 419.50 Da
+Atom names: N, CA, C, O, CB, C4, C5, C6, N2, C10, C11, O3, C12, C13, C14, C15, C16, C17, O4, C18, O5, N4, C19, O6, C20, C21, N5, O7, O8, HN, HA, H3, H4, H5, H6, H7, H8, H9, H10, H11, H12, H20, H21, H22, H23, H24, H25, H26, H27, H28, H29, H30, H31, H32, H33, H34, H35, H36, H37, H38, H39, H40, H41, H42
