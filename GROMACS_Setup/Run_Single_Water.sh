@@ -248,10 +248,20 @@ if [ ! -f "index.ndx" ]; then
     echo ""
     echo "--- Step 7: Creating Index Groups ---"
 
-    # For water-only system: SOLU = Protein (group 1), SOLV = non-Protein (group 11)
-    # Default GROMACS groups: 0=System, 1=Protein, ..., 11=non-Protein, ...
-    # Rename existing groups rather than creating new ones
-    echo -e "name 1 SOLU\nname 11 SOLV\nq" | $SERIAL $GMX make_ndx -f min.gro -o index.ndx
+    # For water-only system: SOLU = Protein, SOLV = everything else
+    # Robust: don't hardcode group numbers — they vary across systems
+    # Step 1: Create complement of Protein (group 1)
+    echo -e "! 1\nq" | $SERIAL $GMX make_ndx -f min.gro -o index_raw.ndx
+
+    # Step 2: Find the new group number (last group)
+    NGRP=$(grep -c '^\[' index_raw.ndx)
+    LAST=$((NGRP - 1))
+
+    # Step 3: Rename Protein→SOLU and complement→SOLV
+    echo -e "name 1 SOLU\nname $LAST SOLV\nq" | \
+        $SERIAL $GMX make_ndx -f min.gro -n index_raw.ndx -o index.ndx
+
+    rm -f index_raw.ndx
 
     echo "  Index groups created."
 else

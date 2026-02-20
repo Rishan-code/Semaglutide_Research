@@ -273,15 +273,20 @@ if [ ! -f "index.ndx" ]; then
     echo ""
     echo "--- Step 8: Creating Index Groups ---"
 
-    # Group 1 = Protein, Group 13 = PHEN (or similar)
-    # Dynamically find PHEN group number and merge with Protein
-    # Strategy: Create SOLU = Protein + non-water non-ion, SOLV = rest
-    # Use: "1 | r PHEN" to merge Protein with PHEN residues into SOLU
-    echo -e "1 | r PHEN\nname 19 SOLU\n! 19\nname 20 SOLV\nq" | $SERIAL $GMX make_ndx -f min.gro -o index.ndx 2>&1 || {
-        # Fallback: try different group numbering
-        echo "  Retrying index creation with different numbering..."
-        echo -e "\"Protein\" | r PHEN\nname 19 SOLU\n! 19\nname 20 SOLV\nq" | $SERIAL $GMX make_ndx -f min.gro -o index.ndx
-    }
+    # Create merged Protein+PHEN group (robust: don't hardcode group numbers)
+    # Step 1: Create the merged group
+    echo -e "1 | r PHEN\nq" | $SERIAL $GMX make_ndx -f min.gro -o index_raw.ndx
+
+    # Step 2: Find the new group number (it's always the last one)
+    NGRP=$(grep -c '^\[' index_raw.ndx)
+    LAST=$((NGRP - 1))
+    COMP=$((LAST + 1))
+
+    # Step 3: Name it SOLU, create complement as SOLV
+    echo -e "name $LAST SOLU\n! $LAST\nname $COMP SOLV\nq" | \
+        $SERIAL $GMX make_ndx -f min.gro -n index_raw.ndx -o index.ndx
+
+    rm -f index_raw.ndx
 
     echo "  Index groups created."
 else
