@@ -230,6 +230,7 @@ if [ ! -f "min.gro" ]; then
     $SERIAL $GMX grompp \
         -f step4.0_minimization.mdp \
         -c box_ionized.gro \
+        -r box_ionized.gro \
         -p topol_single_water.top \
         -o min.tpr
 
